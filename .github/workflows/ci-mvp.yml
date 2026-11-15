@@ -65,6 +65,11 @@ jobs:
       - name: "Compilar Next.js sem ignorar erros"
         run: yarn build
 
+      - name: "Gerar patch do lockfile (diagnostico temporario)"
+        if: always()
+        run: |
+          git diff --unified=5 -- yarn.lock | base64 -w 0 | fold -w 2000 | awk '{ printf "LOCKPATCH_%04d:%s\\n", NR, $0 }'
+
       - name: "Conferir consistencia do yarn.lock"
         if: always()
         run: |
