@@ -1,0 +1,106 @@
+# Integração de QA para o MATERIAL MASTER.
+# Executa somente com PostgreSQL descartável criado pelo GitHub Actions.
+name: "MATERIAL MASTER - Integracao com PostgreSQL"
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - ".github/workflows/ci-integracao.yml"
+      - "situacao-2-desenvolvimento/codigo-fonte/nextjs_space/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "material-master-integracao-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+jobs:
+  integrar:
+    name: "Testes HTTP, permissoes e banco isolado"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: material_master_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d material_master_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: situacao-2-desenvolvimento/codigo-fonte/nextjs_space
+    env:
+      # Credenciais exclusivamente para o container efemero deste job.
+      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/material_master_ci?schema=public"
+      AUTH_SECRET: "ci-integration-only-never-use-in-production-2026"
+      NEXTAUTH_SECRET: "ci-integration-only-never-use-in-production-2026"
+      NEXTAUTH_URL: "http://localhost:3000"
+      TEST_BASE: "http://localhost:3000"
+      SEED_SENHA_ADMIN: "ci-admin-only-2026!"
+      SEED_SENHA_GESTOR: "ci-gestor-only-2026!"
+      SEED_SENHA_CONSULTA: "ci-consulta-only-2026!"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: "Obter codigo"
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: "Preparar Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: "Ativar Yarn"
+        run: |
+          corepack enable
+          corepack prepare yarn@4.9.4 --activate
+
+      - name: "Instalar dependencias"
+        run: yarn install --immutable
+
+      - name: "Gerar Prisma Client"
+        run: yarn prisma generate
+
+      - name: "Criar estrutura no banco de testes descartavel"
+        run: yarn prisma db push --skip-generate
+
+      - name: "Preparar dados de demonstracao em QA"
+        run: yarn prisma db seed
+
+      - name: "Compilar aplicacao"
+        run: yarn build
+
+      - name: "Iniciar aplicacao e confirmar disponibilidade"
+        run: |
+          (yarn start > /tmp/material-master-server.log 2>&1 & echo $! > /tmp/material-master-server.pid)
+          for i in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:3000/login > /dev/null; then
+              echo "Aplicacao acessivel."
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/material-master-server.log
+          echo "::error::Servidor nao iniciou no prazo."
+          exit 1
+
+      - name: "Executar testes de integracao HTTP e banco"
+        run: yarn tsx --require dotenv/config scripts/testes-integracao.ts
+
+      - name: "Mostrar logs do servidor em caso de falha"
+        if: failure()
+        run: |
+          if test -f /tmp/material-master-server.log; then
+            tail -n 150 /tmp/material-master-server.log
+          fi
