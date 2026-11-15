@@ -51,8 +51,10 @@ jobs:
           corepack prepare yarn@4.9.4 --activate
           yarn --version
 
-      - name: "Instalar dependencias de forma reproduzivel"
-        run: yarn install --immutable
+      # Instala mesmo quando o lockfile legado precisa ser sincronizado.
+      # A etapa final reprova o PR se o lockfile for alterado pela instalacao.
+      - name: "Instalar dependencias para diagnostico"
+        run: yarn install --no-immutable
 
       - name: "Gerar cliente Prisma (sem migracao ou seed)"
         run: yarn prisma generate
@@ -62,3 +64,13 @@ jobs:
 
       - name: "Compilar Next.js sem ignorar erros"
         run: yarn build
+
+      - name: "Conferir consistencia do yarn.lock"
+        if: always()
+        run: |
+          if ! git diff --quiet -- yarn.lock; then
+            echo "::error file=situacao-2-desenvolvimento/codigo-fonte/nextjs_space/yarn.lock::O yarn.lock publicado difere das dependencias atuais. Atualize o lockfile e revise o diff antes de aprovar o PR."
+            git diff --stat -- yarn.lock
+            exit 1
+          fi
+          echo "Lockfile consistente."
