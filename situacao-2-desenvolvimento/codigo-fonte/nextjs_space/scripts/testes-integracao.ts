@@ -301,6 +301,31 @@ async function main() {
     esperar(r.status === 400, `Esperado 400, obtido ${r.status}`)
   })
 
+  await teste('Sessão existente: mudança de perfil e inativação revogam acesso imediatamente', async () => {
+    // Executar somente contra base de QA isolada; este teste cria e inativa usuário.
+    const email = `sessao.${Date.now()}@materialmaster.com.br`
+    const senha = 'Teste@123'
+    const criado = await api(admin, 'POST', '/api/usuarios', { name: 'Sessão RBAC Teste', email, password: senha, perfil: 'ADMINISTRADOR' })
+    esperar(criado.status === 201, `Criar administrador de teste: ${criado.status}`)
+    const id = (criado.json.usuario as { id: string }).id
+    const sessaoAntiga = await login(email, senha)
+    esperar(Boolean(sessaoAntiga), 'Sessão inicial não criada')
+    const acessoAntes = await api(sessaoAntiga, 'GET', '/api/usuarios')
+    esperar(acessoAntes.status === 200, `Admin recém-criado deveria ter acesso: ${acessoAntes.status}`)
+
+    const rebaixado = await api(admin, 'PUT', `/api/usuarios/${id}`, { perfil: 'CONSULTA' })
+    esperar(rebaixado.status === 200, `Rebaixar usuário: ${rebaixado.status}`)
+    const acessoDepois = await api(sessaoAntiga, 'GET', '/api/usuarios')
+    esperar(acessoDepois.status === 403, `JWT antigo manteve acesso administrativo: ${acessoDepois.status}`)
+
+    const inativado = await api(admin, 'PUT', `/api/usuarios/${id}`, { ativo: false })
+    esperar(inativado.status === 200, `Inativar usuário: ${inativado.status}`)
+    const bloqueado = await api(sessaoAntiga, 'GET', '/api/materiais')
+    esperar(bloqueado.status === 401, `Conta inativa ainda acessa API: ${bloqueado.status}`)
+    const paginaBloqueada = await pagina(sessaoAntiga, '/inicio')
+    esperar(paginaBloqueada.location.includes('/login'), `Conta inativa ainda acessa página: ${paginaBloqueada.status}, ${paginaBloqueada.location}`)
+  })
+
   // ---------- 7. Páginas renderizam para perfis autorizados ----------
   await teste('Páginas: início, materiais, detalhe, novo, classificações e usuários respondem 200 para o perfil correto', async () => {
     const checks: Array<[Sessao | null, string]> = [

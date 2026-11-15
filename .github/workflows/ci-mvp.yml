@@ -1,0 +1,75 @@
+# Validação inicial do MVP MATERIAL MASTER.
+# Executa apenas em PRs para main quando o código do aplicativo ou este arquivo muda.
+# Sem banco de dados, sem seed, sem deploy, sem segredos do repositório.
+name: "MATERIAL MASTER - TypeScript e build"
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - ".github/workflows/ci-mvp.yml"
+      - "situacao-2-desenvolvimento/codigo-fonte/nextjs_space/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "material-master-ci-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: "Verificacao estatica e compilacao"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: situacao-2-desenvolvimento/codigo-fonte/nextjs_space
+    env:
+      # Conexao e segredo FICTICIOS usados apenas para gerar tipos e compilar.
+      # O workflow NAO se conecta ao PostgreSQL.
+      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/material_master_ci?schema=public"
+      AUTH_SECRET: "ci-temporary-not-for-production-secret-only-2026"
+      NEXTAUTH_SECRET: "ci-temporary-not-for-production-secret-only-2026"
+      NEXTAUTH_URL: "http://localhost:3000"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: "Obter codigo do pull request"
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: "Preparar Node.js 22"
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: "Ativar Yarn 4"
+        run: |
+          corepack enable
+          corepack prepare yarn@4.9.4 --activate
+          yarn --version
+
+      - name: "Instalar dependencias com lockfile imutavel"
+        run: yarn install --immutable
+
+      - name: "Gerar cliente Prisma (sem migracao ou seed)"
+        run: yarn prisma generate
+
+      - name: "Verificar tipos TypeScript"
+        run: yarn tsc --noEmit
+
+      - name: "Compilar Next.js sem ignorar erros"
+        run: yarn build
+
+      - name: "Conferir consistencia do yarn.lock"
+        if: always()
+        run: |
+          if ! git diff --quiet -- yarn.lock; then
+            echo "::error file=situacao-2-desenvolvimento/codigo-fonte/nextjs_space/yarn.lock::O yarn.lock publicado difere das dependencias atuais. Atualize o lockfile e revise o diff antes de aprovar o PR."
+            git diff --stat -- yarn.lock
+            exit 1
+          fi
+          echo "Lockfile consistente."
