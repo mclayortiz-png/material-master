@@ -52,14 +52,15 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - name: "Obter codigo"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
 
       - name: "Preparar Node.js"
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "22"
+          package-manager-cache: false
 
       - name: "Ativar Yarn"
         run: |
