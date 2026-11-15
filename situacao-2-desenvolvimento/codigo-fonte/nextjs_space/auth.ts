@@ -40,8 +40,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = (user as { id?: string })?.id ?? token.sub
-        token.perfil = (user as { perfil?: Perfil })?.perfil
       }
+
+      // Revalida o usuário em toda consulta de sessão para aplicar mudanças de perfil.
+      // Conta inativa ou removida invalida o JWT; não reutilizar permissões antigas.
+      const id = typeof token.id === 'string' && token.id ? token.id : token.sub
+      if (!id) return null
+
+      const atual = await prisma.user.findUnique({
+        where: { id },
+        select: { id: true, name: true, email: true, perfil: true, ativo: true },
+      })
+      if (!atual?.ativo) return null
+
+      token.id = atual.id
+      token.perfil = atual.perfil
+      token.name = atual.name
+      token.email = atual.email
       return token
     },
     async session({ session, token }) {
