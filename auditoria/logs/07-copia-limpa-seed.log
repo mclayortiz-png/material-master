@@ -1,0 +1,5 @@
+Environment variables loaded from .env
+Running seed command `tsx --require dotenv/config scripts/safe-seed.ts` ...
+Seed: 23 materiais criados.
+Seed concluído.
+🌱  The seed command has been executed.

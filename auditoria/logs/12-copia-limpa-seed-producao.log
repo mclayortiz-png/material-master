@@ -1,0 +1,15 @@
+== 1) login com senha padrão ANTES do seed de produção (esperado 200) ==
+status=200
+== 2) seed com NODE_ENV=production e SEED_ATUALIZAR_SENHAS=true (gera senhas aleatórias; saída mascarada) ==
+ATENÇÃO: senhas geradas aleatoriamente para as contas de demonstração (exibidas UMA única vez):
+  admin@materialmaster.com.br  ->  <senha-gerada-ocultada>
+  gestor@materialmaster.com.br  ->  <senha-gerada-ocultada>
+  consulta@materialmaster.com.br  ->  <senha-gerada-ocultada>
+Guarde-as em local seguro ou defina SEED_SENHA_ADMIN / SEED_SENHA_GESTOR / SEED_SENHA_CONSULTA antes de rodar o seed.
+Seed concluído.
+🌱  The seed command has been executed.
+== 3) login com senha padrão DEPOIS (esperado 401) ==
+status=401
+== 4) seed de produção SEM SEED_ATUALIZAR_SENHAS não sobrescreve senhas; com SEED_SENHA_ADMIN definida e atualização forçada, a senha informada passa a valer ==
+1
+status=200

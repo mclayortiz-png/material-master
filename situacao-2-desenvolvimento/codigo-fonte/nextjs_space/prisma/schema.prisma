@@ -1,0 +1,170 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// ---------- Perfis / Usuários ----------
+
+enum Perfil {
+  ADMINISTRADOR
+  GESTOR_CADASTRO
+  CONSULTA
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  perfil    Perfil   @default(CONSULTA)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  materiaisCriados    Material[] @relation("MaterialCriadoPor")
+  materiaisAtualizados Material[] @relation("MaterialAtualizadoPor")
+  auditLogs           AuditLog[]
+
+  @@index([perfil])
+  @@index([ativo])
+}
+
+// ---------- Classificação: Família -> Grupo -> Subgrupo ----------
+
+model Familia {
+  id        String   @id @default(cuid())
+  codigo    String   @unique
+  nome      String
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  grupos    Grupo[]
+  materiais Material[]
+
+  @@index([ativo])
+}
+
+model Grupo {
+  id        String   @id @default(cuid())
+  codigo    String
+  nome      String
+  ativo     Boolean  @default(true)
+  familiaId String
+  familia   Familia  @relation(fields: [familiaId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subgrupos Subgrupo[]
+  materiais Material[]
+
+  @@unique([familiaId, codigo])
+  @@index([familiaId])
+  @@index([ativo])
+}
+
+model Subgrupo {
+  id        String   @id @default(cuid())
+  codigo    String
+  nome      String
+  ativo     Boolean  @default(true)
+  grupoId   String
+  grupo     Grupo    @relation(fields: [grupoId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  materiais Material[]
+
+  @@unique([grupoId, codigo])
+  @@index([grupoId])
+  @@index([ativo])
+}
+
+// ---------- Unidade de medida ----------
+
+model UnidadeMedida {
+  id        String   @id @default(cuid())
+  sigla     String   @unique
+  nome      String
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  materiais Material[]
+}
+
+// ---------- Material ----------
+
+enum StatusMaterial {
+  ATIVO
+  INATIVO
+}
+
+// Sequência segura para geração de códigos (uma linha por prefixo)
+model CodigoSequencia {
+  prefixo String @id
+  ultimo  Int    @default(0)
+}
+
+model Material {
+  id               String         @id @default(cuid())
+  codigo           String         @unique // imutável, gerado pelo sistema
+  descricaoCurta   String
+  descricaoLonga   String?
+  unidadeMedidaId  String
+  unidadeMedida    UnidadeMedida  @relation(fields: [unidadeMedidaId], references: [id])
+  familiaId        String
+  familia          Familia        @relation(fields: [familiaId], references: [id])
+  grupoId          String
+  grupo            Grupo          @relation(fields: [grupoId], references: [id])
+  subgrupoId       String
+  subgrupo         Subgrupo       @relation(fields: [subgrupoId], references: [id])
+  fabricante       String?
+  partNumber       String?
+  ncm              String?
+  status           StatusMaterial @default(ATIVO)
+  criadoPorId      String
+  criadoPor        User           @relation("MaterialCriadoPor", fields: [criadoPorId], references: [id])
+  atualizadoPorId  String?
+  atualizadoPor    User?          @relation("MaterialAtualizadoPor", fields: [atualizadoPorId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([status])
+  @@index([familiaId])
+  @@index([grupoId])
+  @@index([subgrupoId])
+  @@index([unidadeMedidaId])
+  @@index([criadoPorId])
+  @@index([atualizadoPorId])
+  @@index([descricaoCurta])
+  @@index([createdAt])
+}
+
+// ---------- Auditoria (base para RF de trilha de auditoria) ----------
+
+enum AcaoAuditoria {
+  CRIACAO
+  EDICAO
+  INATIVACAO
+  REATIVACAO
+  LOGIN
+}
+
+model AuditLog {
+  id         String        @id @default(cuid())
+  entidade   String        // Material, Familia, Grupo, Subgrupo, User
+  entidadeId String
+  acao       AcaoAuditoria
+  detalhes   Json?
+  usuarioId  String
+  usuario    User          @relation(fields: [usuarioId], references: [id])
+  createdAt  DateTime      @default(now())
+
+  @@index([entidade, entidadeId])
+  @@index([usuarioId])
+  @@index([createdAt])
+}

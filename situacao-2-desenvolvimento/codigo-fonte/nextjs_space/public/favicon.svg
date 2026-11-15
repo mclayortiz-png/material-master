@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <rect width="256" height="256" fill="#ffffff"/>
+  <path d="M128 40 L200 80 L200 176 L128 216 L56 176 L56 80 Z" fill="none" stroke="#0F766E" stroke-width="12" stroke-linejoin="miter"/>
+  <text x="128" y="158" font-family="Arial, sans-serif" font-size="96" font-weight="bold" fill="#0F766E" text-anchor="middle">MM</text>
+</svg>

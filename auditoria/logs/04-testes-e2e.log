@@ -1,0 +1,12 @@
+PASS - Login admin -> /inicio 
+PASS - Listar e buscar materiais 
+PASS - Criar material via formulário (validação + cascata + código gerado) 
+PASS - Editar material e ver histórico 
+PASS - Inativar (com motivo) e reativar material 
+PASS - Classificações: criar família pelo diálogo 
+PASS - Admin acessa /usuarios 
+PASS - Consulta (mobile): lista OK, bloqueado em novo/usuarios/classificacoes 
+PASS - Gestor: acessa novo material, bloqueado em classificações, logout 
+PASS - Login com senha errada mostra erro pt-BR 
+E2E: 10/10 aprovados
+EXIT=0

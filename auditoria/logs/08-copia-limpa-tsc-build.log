@@ -1,0 +1,47 @@
+▲ Next.js 16.4.1 (Turbopack)
+- Environments: .env
+✓ Running next.config.js took 11ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.8s
+  Skipping validation of types
+  Finished TypeScript config validation in 4ms ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/2) ...
+✓ Generating static pages using 3 workers (2/2) in 69ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/auth/login
+├ ƒ /api/familias
+├ ƒ /api/familias/[id]
+├ ƒ /api/grupos
+├ ƒ /api/grupos/[id]
+├ ƒ /api/materiais
+├ ƒ /api/materiais/[id]
+├ ƒ /api/materiais/[id]/status
+├ ƒ /api/signup
+├ ƒ /api/subgrupos
+├ ƒ /api/subgrupos/[id]
+├ ƒ /api/unidades
+├ ƒ /api/usuarios
+├ ƒ /api/usuarios/[id]
+├ ƒ /cadastro
+├ ƒ /classificacoes
+├ ƒ /inicio
+├ ƒ /login
+├ ○ /manifest.webmanifest
+├ ƒ /materiais
+├ ƒ /materiais/[id]
+├ ƒ /materiais/[id]/editar
+├ ƒ /materiais/novo
+├ ƒ /sem-permissao
+└ ƒ /usuarios
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

@@ -1,0 +1,16 @@
+Build de produção do projeto no ambiente de preview (executado pela ferramenta de build da plataforma em 14/11/2026).
+Comando equivalente: NEXT_DIST_DIR=.build yarn run build && yarn eslint --no-config-lookup --config eslint.ssr.config.mjs .
+Trecho da saída registrada:
+
+  ▲ Next.js 16.4.1 (Turbopack)
+  Creating an optimized production build ...
+  ✓ Compiled successfully in 2.1s
+  Skipping validation of types
+  ✓ Generating static pages using 3 workers (2/2) in 76ms
+  Route (app): 28 rotas (/, /login, /cadastro, /inicio, /materiais, /materiais/novo, /materiais/[id], /materiais/[id]/editar,
+               /classificacoes, /usuarios, /sem-permissao, /manifest.webmanifest e 16 rotas /api/*)
+  exit_code=0
+
+Smoke de autenticação executado pela mesma ferramenta: providers=credentials OK, CSRF OK, signup 201, login 302 + sessão válida.
+Observação: "Skipping validation of types" decorre de typescript.ignoreBuildErrors=true em next.config.js; a checagem de tipos
+foi executada separadamente (01-typescript.log, 0 erros).

@@ -1,0 +1,35 @@
+
+=== Testes de integração MATERIAL MASTER (http://localhost:3100) ===
+
+✓ Código: 25 gerações concorrentes produzem 25 códigos únicos e sequenciais
+✓ Login: administrador, gestor e consulta autenticam com credenciais válidas
+✓ Login: senha incorreta é rejeitada
+✓ Autorização: APIs exigem autenticação (401 sem sessão)
+✓ Autorização: páginas protegidas redirecionam anônimos para /login
+✓ Autorização: perfil Consulta não cria material (403) nem acessa páginas de edição
+✓ Autorização: perfil Gestor não gerencia classificações nem usuários (403)
+✓ Autorização: perfil Consulta consegue listar e ver materiais
+✓ Validação: material sem campos obrigatórios retorna 400 com mensagens pt-BR por campo
+✓ Validação: NCM com tamanho inválido é rejeitado
+✓ Integridade: grupo de outra família é rejeitado no cadastro de material
+✓ Material: gestor cria material com código gerado automaticamente e auditoria de criação
+✓ Material: código é imutável (tentativa de alterar retorna 400)
+✓ Material: edição registra atualizadoPor e trilha com alterações
+✓ Material: busca textual e filtro por família/status/paginação funcionam
+✓ Material: inativação exige motivo, é lógica (registro preservado) e reativação funciona
+✓ Material: exclusão física não é permitida (405)
+✓ Material: perfil Consulta não inativa material (403)
+✓ Hierarquia: admin cria família, grupo e subgrupo; código duplicado retorna 409
+✓ Hierarquia: validação de código inválido e nome curto (400)
+✓ Hierarquia: inativar família em uso exige confirmação (409) e com confirmação inativa
+✓ Hierarquia: família inativa não pode ser usada em novo material
+✓ Hierarquia: grupo não pode ser reativado se família pai estiver inativa; reativar família resolve
+✓ Hierarquia: grupo não pode ser movido para outra família se tiver materiais vinculados
+✓ Hierarquia: exclusão física bloqueada (405)
+✓ Usuários: admin cria usuário, altera perfil e inativa; usuário inativo não loga
+✓ Usuários: autocadastro público cria perfil CONSULTA e rejeita e-mail duplicado
+✓ Usuários: admin não pode inativar a própria conta
+✓ Páginas: início, materiais, detalhe, novo, classificações e usuários respondem 200 para o perfil correto
+
+=== Resultado: 29/29 testes aprovados ===
+EXIT=0
