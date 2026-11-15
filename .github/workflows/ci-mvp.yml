@@ -51,10 +51,8 @@ jobs:
           corepack prepare yarn@4.9.4 --activate
           yarn --version
 
-      # Instala mesmo quando o lockfile legado precisa ser sincronizado.
-      # A etapa final reprova o PR se o lockfile for alterado pela instalacao.
-      - name: "Instalar dependencias para diagnostico"
-        run: yarn install --no-immutable
+      - name: "Instalar dependencias com lockfile imutavel"
+        run: yarn install --immutable
 
       - name: "Gerar cliente Prisma (sem migracao ou seed)"
         run: yarn prisma generate
@@ -64,11 +62,6 @@ jobs:
 
       - name: "Compilar Next.js sem ignorar erros"
         run: yarn build
-
-      - name: "Gerar patch do lockfile (diagnostico temporario)"
-        if: always()
-        run: |
-          git diff --unified=5 -- yarn.lock | base64 -w 0 | fold -w 2000 | awk '{ printf "LOCKPATCH_%04d:%s\\n", NR, $0 }'
 
       - name: "Conferir consistencia do yarn.lock"
         if: always()
