@@ -139,6 +139,7 @@ async function main() {
       esperar(bloqueado === null, 'Login válido deveria ser bloqueado após exceder o limite de tentativas')
       const contador = await prisma.loginRateLimit.findUnique({ where: { key } })
       esperar((contador?.attempts ?? 0) > LIMITES_LOGIN.porConta, 'Contador persistente não registrou o bloqueio')
+      esperar(Boolean(contador && !contador.key.includes(email)), 'Registro de segurança não pode revelar e-mail em texto puro')
       // QA com banco descartável: simula término da janela sem aguardar tempo real.
       await prisma.loginRateLimit.update({
         where: { key },
