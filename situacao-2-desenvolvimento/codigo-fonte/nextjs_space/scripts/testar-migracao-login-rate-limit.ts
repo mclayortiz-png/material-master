@@ -11,6 +11,7 @@ const source = process.env.DATABASE_URL ?? ''
 const url = new URL(source)
 const database = url.pathname.replace(/^\//, '')
 if (
+  process.env.MIGRATION_QA_ONLY !== 'true' ||
   process.env.GITHUB_ACTIONS !== 'true' ||
   !['127.0.0.1', 'localhost'].includes(url.hostname) ||
   database !== 'material_master_ci'
