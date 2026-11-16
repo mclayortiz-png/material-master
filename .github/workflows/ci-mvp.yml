@@ -58,6 +58,9 @@ jobs:
       - name: "Gerar cliente Prisma (sem migracao ou seed)"
         run: yarn prisma generate
 
+      - name: "Executar 29 testes unitarios Vitest"
+        run: yarn test:unit
+
       - name: "Verificar tipos TypeScript"
         run: yarn tsc --noEmit
 
