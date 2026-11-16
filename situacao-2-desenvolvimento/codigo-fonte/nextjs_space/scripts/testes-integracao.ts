@@ -108,7 +108,8 @@ async function main() {
     const s = await login('admin@materialmaster.com.br', 'errada')
     esperar(s === null, 'Login com senha errada foi aceito')
     const r = await api(null, 'POST', '/api/auth/login', { email: 'admin@materialmaster.com.br', password: 'errada' })
-    esperar(r.status === 401, `Esperado 401, obtido ${r.status}`)
+    esperar(r.status === 410, `Endpoint auxiliar deve estar desativado (410); obtido ${r.status}`)
+    esperar(!r.json.usuario, 'Endpoint desativado não deve divulgar dados do usuário')
   })
 
   // ---------- 3. Autorização (servidor) ----------
