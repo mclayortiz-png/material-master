@@ -26,3 +26,18 @@
 ## Status
 
 **Pendente:** CI da PR #4, revisão de preview e validação do aplicativo publicado. Nenhum novo deploy realizado por esta auditoria.
+
+## Controle complementar — tentativas repetidas no login Auth.js
+
+- **Achado:** o fluxo de credenciais verdadeiro, processado pelo Auth.js, também não impunha limite de tentativas. A desativação da rota auxiliar por si só era insuficiente.
+- **Mitigação preparada:** módulo `lib/login-rate-limit.ts` chamado antes de consultar o usuário/bcrypt no `auth.ts`.
+- **Persistência:** modelo Prisma `LoginRateLimit`, atualizado atomicamente por `INSERT ... ON CONFLICT ... RETURNING` em transação PostgreSQL; funciona entre instâncias do app.
+- **Política:** janela fixa de 15 minutos, 20 tentativas por conta. Opcionalmente, cinco tentativas por conta+IP e 60 por IP quando `AUTH_TRUST_PROXY_HEADERS=true` e o proxy estiver configurado para sanitizar cabeçalhos IP.
+- **Privacidade:** chaves com HMAC-SHA256 usando `AUTH_SECRET`/`NEXTAUTH_SECRET`; não armazenar e-mails/IPs brutos nesta tabela.
+- **Experiência de autenticação:** usuário bloqueado recebe a mesma resposta genérica de credenciais inválidas; uma autenticação bem-sucedida limpa seu contador por conta.
+- **Fail-closed:** erro no banco/segredo não libera autenticação sem o limitador.
+- **Preparação de schema obrigatória:** gerar Prisma Client e aplicar criação **não destrutiva** da nova tabela no PostgreSQL de preview, inspecionando previamente o DDL; depois repetir o processo em produção apenas com autorização e backup. **Sem qualquer migração ou deploy realizado por esta PR.**
+- **Testes adicionais:** testes unitários de chaves HMAC/normalização/origem de IP e cenário HTTP com conta temporária: tentativas inválidas, bloqueio de senha válida durante a janela, expiração simulada e recuperação.
+- **Riscos adicionais:** bloqueio deliberado de contas por terceiros, ampliação ilimitada da tabela por endereços inventados, cabeçalhos IP falsificados e proteção de login distribuído exigem controle adicional no proxy/WAF. Não afirmar eliminação completa do risco de brute force sem validar a infraestrutura do AbacusAI.
+- **Limpeza:** prever expurgo periódico dos registros de limite com `updatedAt` superior a 24 horas em um job de manutenção controlado.
+- **Status:** alteração de código em PR #4; aplicação ao site **pendente de testes de CI, revisão, implantação e auditoria pós-deploy**.
