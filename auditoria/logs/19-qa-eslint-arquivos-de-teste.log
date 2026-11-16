@@ -1,0 +1,4 @@
+# QA incremental — ESLint restrito aos arquivos criados/alterados (tests/, vitest.config.ts, scripts/testes-integracao.ts)
+# Data: 2026-11-15T01:54Z
+# Comando: yarn eslint tests vitest.config.ts scripts/testes-integracao.ts
+EXIT=0

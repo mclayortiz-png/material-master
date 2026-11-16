@@ -1,0 +1,4 @@
+# Build de produção da cópia isolada — 2026-11-15T01:42:06+00:00
+# Comando: yarn build em <copia-isolada>/nextjs_space (NEXT_DIST_DIR=.build) — resultado: PASSED (exit 0), relatado pela ferramenta de build.
+<copia-isolada>/nextjs_space/.build
+artefato .build presente; servidor iniciado em :3100 (NEXT_DIST_DIR=.build PORT=3100 yarn start)

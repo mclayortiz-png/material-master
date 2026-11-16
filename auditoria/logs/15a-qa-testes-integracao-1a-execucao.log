@@ -1,0 +1,55 @@
+
+=== Testes de integração MATERIAL MASTER (http://localhost:3100) ===
+
+✓ Código: 25 gerações concorrentes produzem 25 códigos únicos e sequenciais
+✓ Login: administrador, gestor e consulta autenticam com credenciais válidas
+✓ Login: senha incorreta é rejeitada
+✓ Autorização: APIs exigem autenticação (401 sem sessão)
+✓ Autorização: páginas protegidas redirecionam anônimos para /login
+✓ Autorização: perfil Consulta não cria material (403) nem acessa páginas de edição
+✓ Autorização: perfil Gestor não gerencia classificações nem usuários (403)
+✓ Autorização: perfil Consulta consegue listar e ver materiais
+✓ Validação: material sem campos obrigatórios retorna 400 com mensagens pt-BR por campo
+✓ Validação: NCM com tamanho inválido é rejeitado
+✓ Integridade: grupo de outra família é rejeitado no cadastro de material
+✓ Material: gestor cria material com código gerado automaticamente e auditoria de criação
+✓ Material: código é imutável (tentativa de alterar retorna 400)
+✓ Material: edição registra atualizadoPor e trilha com alterações
+✓ Material: busca textual e filtro por família/status/paginação funcionam
+✓ Material: inativação exige motivo, é lógica (registro preservado) e reativação funciona
+✓ Material: exclusão física não é permitida (405)
+✓ Material: perfil Consulta não inativa material (403)
+✓ Hierarquia: admin cria família, grupo e subgrupo; código duplicado retorna 409
+✓ Hierarquia: validação de código inválido e nome curto (400)
+✓ Hierarquia: inativar família em uso exige confirmação (409) e com confirmação inativa
+✓ Hierarquia: família inativa não pode ser usada em novo material
+✓ Hierarquia: grupo não pode ser reativado se família pai estiver inativa; reativar família resolve
+✓ Hierarquia: grupo não pode ser movido para outra família se tiver materiais vinculados
+✓ Hierarquia: exclusão física bloqueada (405)
+✓ Usuários: admin cria usuário, altera perfil e inativa; usuário inativo não loga
+✓ Usuários: autocadastro público cria perfil CONSULTA e rejeita e-mail duplicado
+✓ Usuários: admin não pode inativar a própria conta
+✓ Páginas: início, materiais, detalhe, novo, classificações e usuários respondem 200 para o perfil correto
+✓ Autorização: anônimo recebe 401 em todas as rotas de escrita (14 rotas)
+✓ Autorização: perfil Consulta recebe 403 em todas as rotas de escrita (14 rotas)
+✓ Autorização: perfil Gestor recebe 403 em classificações e usuários (11 rotas) e passa da autorização em materiais
+✓ Autorização: exclusão física é bloqueada para o administrador em todas as entidades (405)
+✓ Auditoria: inativação de material registra INATIVACAO com motivo e autor; reativação registra REATIVACAO
+✗ Auditoria: usuário tem CRIACAO, EDICAO (perfil), INATIVACAO e REATIVACAO com autor administrador
+    Autor das ações de usuário deveria ser o administrador
+✓ Auditoria: autocadastro registra CRIACAO com origem autocadastro
+✓ Auditoria: família/grupo/subgrupo têm CRIACAO, EDICAO (de/para), INATIVACAO e REATIVACAO
+✓ Pesquisa: filtro por grupoId retorna apenas materiais do grupo e total coerente com o banco
+✓ Pesquisa: filtro por subgrupoId e combinação subgrupo + texto
+✓ Pesquisa: grupo de outra família combinado com familiaId incompatível retorna vazio (sem erro)
+✓ Pesquisa: busca sem resultados retorna 200, itens=[], total=0 e totalPaginas=1
+✓ Pesquisa: página além do total e pageSize fora da faixa são normalizados (sem erro 500)
+✓ Integridade: subgrupo com material ativo exige confirmação para inativar (409) e inativa com confirmar=true
+✓ Integridade: subgrupo inativo é rejeitado em novo material e na edição de material existente
+✓ Integridade: grupo com subgrupo/material exige confirmação (409); subgrupo não reativa com grupo inativo (409)
+✓ Integridade: subgrupo com materiais não pode ser movido para outro grupo (409); vazio pode
+✓ Integridade: código de grupo/subgrupo é único apenas dentro do pai (409 no mesmo pai, 201 em pai diferente)
+
+=== Resultado: 46/47 testes aprovados ===
+Falhas:
+ - Auditoria: usuário tem CRIACAO, EDICAO (perfil), INATIVACAO e REATIVACAO com autor administrador: Autor das ações de usuário deveria ser o administrador

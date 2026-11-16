@@ -1,0 +1,3 @@
+# Type-check do projeto (inclui tests/unit e scripts) — 2026-11-15T01:42:04+00:00
+$ yarn tsc --noEmit
+exit=0
