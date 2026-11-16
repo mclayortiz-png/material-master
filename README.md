@@ -58,11 +58,11 @@ A suíte atual inclui 30 cenários automatizados (29 originais + revogação de 
 - Alterações de perfil e inativação de usuário devem ser revalidadas por sessão. A correção proposta está em branch de revisão e não altera automaticamente a aplicação publicada.
 - O GitHub armazena **código e documentação**; o banco e a aplicação hospedada no AbacusAI são ambientes separados.
 - Existem dois workflows GitHub Actions: `.github/workflows/ci-mvp.yml` e `.github/workflows/ci-integracao.yml`.
-- A auditoria de dependências do Dependabot identificou cinco alertas em 15/11/2026; as correções propostas estão em branch de segurança e **dependem de testes e aprovação da PR** antes de integrar à `main`.
+- A auditoria de dependências do Dependabot identificou cinco alertas em 15/11/2026; as versões corrigidas foram integradas pela PR nº 2 após aprovação do build e **30/30 integrações**. A baixa dos alertas no painel do GitHub e o deploy externo ainda precisam de conferência.
 
 ## Próximos passos
 
-1. Validar a Pull Request de correção das dependências vulneráveis e confirmar nova leitura do Dependabot.
+1. Confirmar o fechamento dos cinco alertas de dependências após sincronização do Dependabot e verificar novas vulnerabilidades, se houver.
 2. Conferir o aplicativo publicado no AbacusAI e validar que utiliza a versão do GitHub, HTTPS e banco próprio.
 3. Tornar o repositório público somente após a conferência de credenciais e segurança.
 4. Recolher cinco avaliações de colegas, registrar resultados reais e produzir os vídeos do formulário PIT II.
