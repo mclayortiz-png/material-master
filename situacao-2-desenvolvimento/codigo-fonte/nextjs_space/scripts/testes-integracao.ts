@@ -112,6 +112,15 @@ async function main() {
     esperar(!r.json.usuario, 'Endpoint desativado não deve divulgar dados do usuário')
   })
 
+  await teste('Segurança: cabeçalhos HTTPS, MIME e antiframe', async () => {
+    const resposta = await fetch(`${BASE}/login`)
+    esperar(resposta.status === 200, 'Página de login não está acessível')
+    const h = resposta.headers
+    esperar(h.get('x-content-type-options') === 'nosniff', 'X-Content-Type-Options ausente')
+    esperar(h.get('x-frame-options') === 'SAMEORIGIN', 'X-Frame-Options ausente')
+    esperar(h.get('content-security-policy')?.includes('frame-ancestors') === true, 'CSP anti-clickjacking ausente')
+    esperar(h.get('strict-transport-security')?.includes('max-age=') === true, 'HSTS ausente na compilação de produção')
+  })
   // ---------- 3. Autorização (servidor) ----------
   await teste('Autorização: APIs exigem autenticação (401 sem sessão)', async () => {
     for (const p of ['/api/materiais', '/api/familias', '/api/grupos', '/api/subgrupos', '/api/usuarios', '/api/unidades']) {
