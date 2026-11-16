@@ -56,8 +56,9 @@ BEGIN
     SELECT 1 FROM pg_index ix
     JOIN pg_class tb ON tb.oid = ix.indrelid
     JOIN pg_namespace ns ON ns.oid = tb.relnamespace
+    JOIN pg_attribute att ON att.attrelid = tb.oid AND att.attnum = ix.indkey[0]
     WHERE ns.nspname = current_schema() AND tb.relname = 'LoginRateLimit'
-      AND ix.indisprimary AND pg_get_indexdef(ix.indexrelid) LIKE '%("key")%'
+      AND ix.indisprimary AND ix.indnatts = 1 AND att.attname = 'key'
   ) INTO pk_valida;
 
   SELECT EXISTS(
@@ -65,9 +66,10 @@ BEGIN
     JOIN pg_class tb ON tb.oid = ix.indrelid
     JOIN pg_class idx ON idx.oid = ix.indexrelid
     JOIN pg_namespace ns ON ns.oid = tb.relnamespace
+    JOIN pg_attribute att ON att.attrelid = tb.oid AND att.attnum = ix.indkey[0]
     WHERE ns.nspname = current_schema() AND tb.relname = 'LoginRateLimit'
       AND idx.relname = 'LoginRateLimit_updatedAt_idx'
-      AND pg_get_indexdef(ix.indexrelid) LIKE '%("updatedAt")%'
+      AND ix.indnatts = 1 AND att.attname = 'updatedAt'
   ) INTO idx_valido;
 
   IF NOT pk_valida OR NOT idx_valido THEN
