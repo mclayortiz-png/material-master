@@ -1,0 +1,40 @@
+# Testes unitários (Vitest) — 2026-11-15T01:39:00+00:00
+$ yarn test:unit
+
+ RUN  v3.2.4 <raiz-do-projeto>
+
+ ✓ tests/unit/codigo.test.ts > gerarProximoCodigo > gera MAT-000001 na primeira chamada e incrementa sequencialmente 1ms
+ ✓ tests/unit/codigo.test.ts > gerarProximoCodigo > preenche com zeros à esquerda até 6 dígitos 1ms
+ ✓ tests/unit/codigo.test.ts > gerarProximoCodigo > não trunca sequências acima de 6 dígitos 0ms
+ ✓ tests/unit/codigo.test.ts > gerarProximoCodigo > usa o prefixo informado e mantém sequências independentes por prefixo 0ms
+ ✓ tests/unit/codigo.test.ts > gerarProximoCodigo > executa INSERT ... ON CONFLICT DO NOTHING seguido de UPDATE ... RETURNING (atomicidade por linha) 1ms
+ ✓ tests/unit/codigo.test.ts > gerarProximoCodigo > lança erro em pt-BR se a sequência não devolver um valor 1ms
+ ✓ tests/unit/codigo.test.ts > gerarCodigoMaterial > abre uma transação própria e delega para gerarProximoCodigo 1ms
+ ✓ tests/unit/hierarquia.test.ts > validarHierarquia > retorna null quando Família → Grupo → Subgrupo são coerentes e ativos 2ms
+ ✓ tests/unit/hierarquia.test.ts > validarHierarquia > família inexistente ou inativa 1ms
+ ✓ tests/unit/hierarquia.test.ts > validarHierarquia > grupo inexistente, de outra família ou inativo 0ms
+ ✓ tests/unit/hierarquia.test.ts > validarHierarquia > subgrupo inexistente, de outro grupo ou inativo 0ms
+ ✓ tests/unit/hierarquia.test.ts > validarHierarquia > unidade de medida inexistente ou inativa 0ms
+ ✓ tests/unit/hierarquia.test.ts > validarHierarquia > ordem de precedência: problema na família é reportado antes do grupo e do subgrupo 0ms
+ ✓ tests/unit/hierarquia.test.ts > validarHierarquia > ids ausentes são consultados como string vazia (não lança exceção) 1ms
+ ✓ tests/unit/validacoes.test.ts > materialSchema > aceita material mínimo válido e normaliza opcionais vazios para null 4ms
+ ✓ tests/unit/validacoes.test.ts > materialSchema > rejeita descrição curta com menos de 3 caracteres (mensagem em pt-BR) 2ms
+ ✓ tests/unit/validacoes.test.ts > materialSchema > rejeita descrição curta acima de 120 caracteres 0ms
+ ✓ tests/unit/validacoes.test.ts > materialSchema > exige família, grupo, subgrupo e unidade de medida 1ms
+ ✓ tests/unit/validacoes.test.ts > materialSchema > NCM: aceita 8 dígitos com máscara e remove a pontuação 0ms
+ ✓ tests/unit/validacoes.test.ts > materialSchema > NCM: rejeita quantidade de dígitos diferente de 8 1ms
+ ✓ tests/unit/validacoes.test.ts > materialSchema > aplica trim na descrição curta 0ms
+ ✓ tests/unit/validacoes.test.ts > classificacaoSchema / grupoSchema / subgrupoSchema > converte o código para maiúsculas 1ms
+ ✓ tests/unit/validacoes.test.ts > classificacaoSchema / grupoSchema / subgrupoSchema > rejeita código com caracteres especiais ou espaços 1ms
+ ✓ tests/unit/validacoes.test.ts > classificacaoSchema / grupoSchema / subgrupoSchema > rejeita código com mais de 10 caracteres e código vazio 1ms
+ ✓ tests/unit/validacoes.test.ts > classificacaoSchema / grupoSchema / subgrupoSchema > rejeita nome com menos de 2 ou mais de 80 caracteres 0ms
+ ✓ tests/unit/validacoes.test.ts > classificacaoSchema / grupoSchema / subgrupoSchema > grupo exige familiaId e subgrupo exige grupoId 1ms
+ ✓ tests/unit/validacoes.test.ts > usuarioSchema / usuarioEdicaoSchema > normaliza e-mail para minúsculas e aceita perfil válido 1ms
+ ✓ tests/unit/validacoes.test.ts > usuarioSchema / usuarioEdicaoSchema > rejeita e-mail inválido, senha curta e perfil desconhecido 0ms
+ ✓ tests/unit/validacoes.test.ts > usuarioSchema / usuarioEdicaoSchema > edição: todos os campos opcionais; senha vazia é aceita (não altera) 1ms
+
+ Test Files  3 passed (3)
+      Tests  29 passed (29)
+   Start at  01:39:00
+   Duration  318ms (transform 117ms, setup 0ms, collect 204ms, tests 28ms, environment 0ms, prepare 269ms)
+

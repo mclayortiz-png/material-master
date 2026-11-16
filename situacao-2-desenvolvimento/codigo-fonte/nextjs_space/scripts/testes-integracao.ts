@@ -343,6 +343,205 @@ async function main() {
     esperar(raiz.location.includes('/login'), `/: ${raiz.status} ${raiz.location}`)
   })
 
+  // ---------- 8. QA incremental: autorização em TODAS as rotas de escrita ----------
+  const idFake = 'id-inexistente'
+  type Rota = [string, string, unknown]
+  const rotasAdmin: Rota[] = [
+    ['POST', '/api/familias', { codigo: 'QA1', nome: 'QA' }], ['PUT', `/api/familias/${idFake}`, { codigo: 'QA1', nome: 'QA' }], ['PATCH', `/api/familias/${idFake}`, { ativo: false }],
+    ['POST', '/api/grupos', { codigo: 'QA1', nome: 'QA', familiaId: idFake }], ['PUT', `/api/grupos/${idFake}`, { codigo: 'QA1', nome: 'QA' }], ['PATCH', `/api/grupos/${idFake}`, { ativo: false }],
+    ['POST', '/api/subgrupos', { codigo: 'QA1', nome: 'QA', grupoId: idFake }], ['PUT', `/api/subgrupos/${idFake}`, { codigo: 'QA1', nome: 'QA' }], ['PATCH', `/api/subgrupos/${idFake}`, { ativo: false }],
+    ['POST', '/api/usuarios', { name: 'QA QA', email: 'qa@qa.com', password: 'Qa@12345', perfil: 'CONSULTA' }], ['PUT', `/api/usuarios/${idFake}`, { ativo: false }],
+  ]
+  const rotasGestor: Rota[] = [
+    ['POST', '/api/materiais', base], ['PUT', `/api/materiais/${idFake}`, base], ['PATCH', `/api/materiais/${idFake}/status`, { status: 'INATIVO', motivo: 'QA' }],
+  ]
+  await teste('Autorização: anônimo recebe 401 em todas as rotas de escrita (14 rotas)', async () => {
+    for (const [m, p, b] of [...rotasAdmin, ...rotasGestor]) {
+      const r = await api(null, m, p, b)
+      esperar(r.status === 401, `${m} ${p} retornou ${r.status}`)
+    }
+  })
+  await teste('Autorização: perfil Consulta recebe 403 em todas as rotas de escrita (14 rotas)', async () => {
+    for (const [m, p, b] of [...rotasAdmin, ...rotasGestor]) {
+      const r = await api(consulta, m, p, b)
+      esperar(r.status === 403, `${m} ${p} retornou ${r.status}`)
+    }
+  })
+  await teste('Autorização: perfil Gestor recebe 403 em classificações e usuários (11 rotas) e passa da autorização em materiais', async () => {
+    for (const [m, p, b] of rotasAdmin) {
+      const r = await api(gestor, m, p, b)
+      esperar(r.status === 403, `${m} ${p} retornou ${r.status}`)
+    }
+    for (const [m, p, b] of rotasGestor.slice(1)) {
+      const r = await api(gestor, m, p, b)
+      esperar(r.status === 404, `${m} ${p} (id inexistente) deveria passar da autorização e retornar 404, obteve ${r.status}`)
+    }
+  })
+  await teste('Autorização: exclusão física é bloqueada para o administrador em todas as entidades (405)', async () => {
+    for (const p of [`/api/materiais/${materialId}`, `/api/familias/${famTesteId}`, `/api/grupos/${grpTesteId}`, `/api/subgrupos/${subTesteId}`, `/api/usuarios/${novoUsuarioId}`]) {
+      const r = await api(admin, 'DELETE', p)
+      esperar(r.status === 405, `DELETE ${p} retornou ${r.status}`)
+    }
+  })
+
+  // ---------- 9. QA incremental: trilha de auditoria ----------
+  const adminDb = await prisma.user.findUnique({ where: { email: 'admin@materialmaster.com.br' } })
+  const gestorDb = await prisma.user.findUnique({ where: { email: 'gestor@materialmaster.com.br' } })
+  await teste('Auditoria: inativação de material registra INATIVACAO com motivo e autor; reativação registra REATIVACAO', async () => {
+    const r = await api(gestor, 'PATCH', `/api/materiais/${materialId}/status`, { status: 'INATIVO', motivo: 'Motivo QA incremental' })
+    esperar(r.status === 200, `Inativar: ${r.status}`)
+    const inat = await prisma.auditLog.findFirst({ where: { entidade: 'Material', entidadeId: materialId, acao: 'INATIVACAO' }, orderBy: { createdAt: 'desc' } })
+    esperar((inat?.detalhes as { motivo?: string })?.motivo === 'Motivo QA incremental', `Motivo não registrado: ${JSON.stringify(inat?.detalhes)}`)
+    esperar(inat?.usuarioId === gestorDb?.id, 'Autor da inativação incorreto')
+    const r2 = await api(admin, 'PATCH', `/api/materiais/${materialId}/status`, { status: 'ATIVO' })
+    esperar(r2.status === 200, `Reativar: ${r2.status}`)
+    const reat = await prisma.auditLog.findFirst({ where: { entidade: 'Material', entidadeId: materialId, acao: 'REATIVACAO' }, orderBy: { createdAt: 'desc' } })
+    esperar(Boolean(reat) && reat!.usuarioId === adminDb?.id && reat!.createdAt > inat!.createdAt, 'REATIVACAO ausente ou fora de ordem')
+    const hist = await api(consulta, 'GET', `/api/materiais/${materialId}`)
+    const acoes = ((hist.json.historico ?? hist.json.auditoria ?? []) as Array<{ acao: string }>).map((h) => h.acao)
+    esperar(acoes.includes('INATIVACAO') && acoes.includes('REATIVACAO'), `Histórico do material não expõe inativação/reativação: ${acoes.join(',')}`)
+  })
+  await teste('Auditoria: usuário tem CRIACAO, EDICAO (perfil), INATIVACAO e REATIVACAO com autor administrador', async () => {
+    const r = await api(admin, 'PUT', `/api/usuarios/${novoUsuarioId}`, { ativo: true })
+    esperar(r.status === 200, `Reativar usuário: ${r.status}`)
+    const logs = await prisma.auditLog.findMany({ where: { entidade: 'User', entidadeId: novoUsuarioId }, orderBy: { createdAt: 'asc' } })
+    const acoes = logs.map((l) => l.acao)
+    esperar(acoes[0] === 'CRIACAO', `Primeira ação deveria ser CRIACAO: ${acoes.join(',')}`)
+    esperar(acoes.includes('EDICAO') && acoes.includes('INATIVACAO') && acoes.includes('REATIVACAO'), `Ações: ${acoes.join(',')}`)
+    // O evento LOGIN é registrado pelo próprio usuário autenticado; as demais ações administrativas pelo administrador.
+    const loginLog = logs.find((l) => l.acao === 'LOGIN')
+    esperar(Boolean(loginLog) && loginLog!.usuarioId === novoUsuarioId, 'LOGIN do novo usuário não registrado em seu nome')
+    esperar(logs.filter((l) => l.acao !== 'LOGIN').every((l) => l.usuarioId === adminDb?.id), 'Autor das ações administrativas deveria ser o administrador')
+    const edicao = logs.find((l) => l.acao === 'EDICAO')
+    esperar((edicao?.detalhes as { perfil?: string })?.perfil === 'GESTOR_CADASTRO', 'EDICAO não registra o novo perfil')
+    esperar(logs.every((l) => !JSON.stringify(l.detalhes ?? {}).match(/\$2[aby]\$/)), 'Trilha não pode conter hash de senha')
+  })
+  await teste('Auditoria: autocadastro registra CRIACAO com origem autocadastro', async () => {
+    const u = await prisma.user.findUnique({ where: { email: `auto.${sufixo}@materialmaster.com.br` } })
+    const log = await prisma.auditLog.findFirst({ where: { entidade: 'User', entidadeId: u?.id ?? '', acao: 'CRIACAO' } })
+    esperar((log?.detalhes as { origem?: string })?.origem === 'autocadastro', `Detalhes: ${JSON.stringify(log?.detalhes)}`)
+  })
+  await teste('Auditoria: família/grupo/subgrupo têm CRIACAO, EDICAO (de/para), INATIVACAO e REATIVACAO', async () => {
+    const rf = await api(admin, 'PUT', `/api/familias/${famTesteId}`, { codigo: `T${sufixo}`, nome: 'Família Teste Editada' })
+    esperar(rf.status === 200, `Editar família: ${rf.status} ${JSON.stringify(rf.json)}`)
+    const rg = await api(admin, 'PUT', `/api/grupos/${grpTesteId}`, { codigo: 'G1', nome: 'Grupo Teste Editado' })
+    esperar(rg.status === 200, `Editar grupo: ${rg.status} ${JSON.stringify(rg.json)}`)
+    const rs = await api(admin, 'PUT', `/api/subgrupos/${subTesteId}`, { codigo: 'S1', nome: 'Subgrupo Teste Editado' })
+    esperar(rs.status === 200, `Editar subgrupo: ${rs.status} ${JSON.stringify(rs.json)}`)
+    const si = await api(admin, 'PATCH', `/api/subgrupos/${subTesteId}`, { ativo: false })
+    esperar(si.status === 200, `Inativar subgrupo sem uso: ${si.status} ${JSON.stringify(si.json)}`)
+    const sr = await api(admin, 'PATCH', `/api/subgrupos/${subTesteId}`, { ativo: true })
+    esperar(sr.status === 200, `Reativar subgrupo: ${sr.status}`)
+    for (const [entidade, id, nomeNovo] of [['Familia', famTesteId, 'Família Teste Editada'], ['Grupo', grpTesteId, 'Grupo Teste Editado'], ['Subgrupo', subTesteId, 'Subgrupo Teste Editado']] as const) {
+      const logs = await prisma.auditLog.findMany({ where: { entidade, entidadeId: id }, orderBy: { createdAt: 'asc' } })
+      const acoes = logs.map((l) => l.acao)
+      esperar(acoes[0] === 'CRIACAO' && acoes.includes('EDICAO') && acoes.includes('INATIVACAO') && acoes.includes('REATIVACAO'), `${entidade}: ${acoes.join(',')}`)
+      const ed = logs.filter((l) => l.acao === 'EDICAO').at(-1)
+      const det = ed?.detalhes as { de?: { nome: string }; para?: { nome: string } }
+      esperar(det?.para?.nome === nomeNovo && Boolean(det?.de?.nome) && det.de!.nome !== nomeNovo, `${entidade}: EDICAO sem de/para: ${JSON.stringify(det)}`)
+      esperar(logs.every((l) => l.usuarioId === adminDb?.id), `${entidade}: autor incorreto`)
+    }
+  })
+
+  // ---------- 10. QA incremental: pesquisa por grupo/subgrupo e busca vazia ----------
+  await teste('Pesquisa: filtro por grupoId retorna apenas materiais do grupo e total coerente com o banco', async () => {
+    const r = await api(consulta, 'GET', `/api/materiais?grupoId=${grp?.id}&pageSize=100`)
+    const itens = r.json.itens as Array<{ grupoId: string }>
+    const esperado = await prisma.material.count({ where: { grupoId: grp?.id } })
+    esperar(r.status === 200 && itens.length > 0 && itens.every((i) => i.grupoId === grp?.id), 'Itens fora do grupo')
+    esperar(Number(r.json.total) === esperado && itens.length === esperado, `total=${r.json.total} itens=${itens.length} banco=${esperado}`)
+  })
+  await teste('Pesquisa: filtro por subgrupoId e combinação subgrupo + texto', async () => {
+    const r = await api(consulta, 'GET', `/api/materiais?subgrupoId=${sub?.id}&pageSize=100`)
+    const itens = r.json.itens as Array<{ subgrupoId: string; id: string }>
+    const esperado = await prisma.material.count({ where: { subgrupoId: sub?.id } })
+    esperar(r.status === 200 && itens.every((i) => i.subgrupoId === sub?.id) && itens.length === esperado, `itens=${itens.length} banco=${esperado}`)
+    const r2 = await api(consulta, 'GET', `/api/materiais?subgrupoId=${sub?.id}&q=${encodeURIComponent('teste automatizado')}`)
+    const itens2 = r2.json.itens as Array<{ subgrupoId: string; id: string }>
+    esperar(itens2.some((i) => i.id === materialId) && itens2.every((i) => i.subgrupoId === sub?.id), 'Combinação subgrupo + texto incorreta')
+  })
+  await teste('Pesquisa: grupo de outra família combinado com familiaId incompatível retorna vazio (sem erro)', async () => {
+    const r = await api(consulta, 'GET', `/api/materiais?familiaId=${famOutra?.id}&grupoId=${grp?.id}`)
+    esperar(r.status === 200 && (r.json.itens as unknown[]).length === 0 && Number(r.json.total) === 0, `${r.status} total=${r.json.total}`)
+  })
+  await teste('Pesquisa: busca sem resultados retorna 200, itens=[], total=0 e totalPaginas=1', async () => {
+    const r = await api(consulta, 'GET', `/api/materiais?q=${encodeURIComponent('zzz-inexistente-' + sufixo)}`)
+    esperar(r.status === 200, `Status ${r.status}`)
+    esperar(Array.isArray(r.json.itens) && (r.json.itens as unknown[]).length === 0, 'itens deveria ser vazio')
+    esperar(Number(r.json.total) === 0 && Number(r.json.totalPaginas) === 1, `total=${r.json.total} totalPaginas=${r.json.totalPaginas}`)
+    const p = await pagina(consulta, `/materiais?q=${encodeURIComponent('zzz-inexistente-' + sufixo)}`)
+    esperar(p.status === 200, `Página de materiais com busca vazia: ${p.status}`)
+  })
+  await teste('Pesquisa: página além do total e pageSize fora da faixa são normalizados (sem erro 500)', async () => {
+    const r = await api(consulta, 'GET', '/api/materiais?page=9999&pageSize=1000')
+    esperar(r.status === 200 && Number(r.json.pageSize) <= 100 && Array.isArray(r.json.itens), `${r.status} pageSize=${r.json.pageSize}`)
+    const r2 = await api(consulta, 'GET', '/api/materiais?page=-1&pageSize=0')
+    esperar(r2.status === 200 && Number(r2.json.page) >= 1 && Number(r2.json.pageSize) >= 5, `${r2.status} page=${r2.json.page} pageSize=${r2.json.pageSize}`)
+  })
+
+  // ---------- 11. QA incremental: integridade de grupos e subgrupos ----------
+  let materialHierId = ''
+  await teste('Integridade: subgrupo com material ativo exige confirmação para inativar (409) e inativa com confirmar=true', async () => {
+    const r = await api(gestor, 'POST', '/api/materiais', { ...base, descricaoCurta: 'Material QA hierarquia', familiaId: famTesteId, grupoId: grpTesteId, subgrupoId: subTesteId })
+    esperar(r.status === 201, `Criar material na hierarquia de teste: ${r.status} ${JSON.stringify(r.json)}`)
+    materialHierId = (r.json.material as { id: string }).id
+    const semConf = await api(admin, 'PATCH', `/api/subgrupos/${subTesteId}`, { ativo: false })
+    esperar(semConf.status === 409 && semConf.json.requerConfirmacao === true, `Esperado 409 requerConfirmacao, obtido ${semConf.status} ${JSON.stringify(semConf.json)}`)
+    const comConf = await api(admin, 'PATCH', `/api/subgrupos/${subTesteId}`, { ativo: false, confirmar: true })
+    esperar(comConf.status === 200 && (comConf.json.subgrupo as { ativo: boolean }).ativo === false, `Com confirmação: ${comConf.status}`)
+    const m = await prisma.material.findUnique({ where: { id: materialHierId } })
+    esperar(m?.status === 'ATIVO', 'Inativar subgrupo não deve alterar o status do material existente')
+  })
+  await teste('Integridade: subgrupo inativo é rejeitado em novo material e na edição de material existente', async () => {
+    const r = await api(gestor, 'POST', '/api/materiais', { ...base, familiaId: famTesteId, grupoId: grpTesteId, subgrupoId: subTesteId })
+    esperar(r.status === 400 && String(r.json.erro).includes('inativo'), `Novo: ${r.status} ${JSON.stringify(r.json)}`)
+    const r2 = await api(gestor, 'PUT', `/api/materiais/${materialHierId}`, { ...base, descricaoCurta: 'Material QA hierarquia editado', familiaId: famTesteId, grupoId: grpTesteId, subgrupoId: subTesteId })
+    esperar(r2.status === 400 && String(r2.json.erro).includes('inativo'), `Edição: ${r2.status} ${JSON.stringify(r2.json)}`)
+  })
+  await teste('Integridade: grupo com subgrupo/material exige confirmação (409); subgrupo não reativa com grupo inativo (409)', async () => {
+    await api(admin, 'PATCH', `/api/subgrupos/${subTesteId}`, { ativo: true })
+    const semConf = await api(admin, 'PATCH', `/api/grupos/${grpTesteId}`, { ativo: false })
+    esperar(semConf.status === 409 && semConf.json.requerConfirmacao === true, `Grupo sem confirmação: ${semConf.status}`)
+    const emUso = semConf.json.emUso as { subgrupos: number; materiais: number }
+    esperar(emUso?.subgrupos >= 1 && emUso?.materiais >= 1, `Contagem em uso incorreta: ${JSON.stringify(emUso)}`)
+    const comConf = await api(admin, 'PATCH', `/api/grupos/${grpTesteId}`, { ativo: false, confirmar: true })
+    esperar(comConf.status === 200, `Grupo com confirmação: ${comConf.status}`)
+    await api(admin, 'PATCH', `/api/subgrupos/${subTesteId}`, { ativo: false, confirmar: true })
+    const reat = await api(admin, 'PATCH', `/api/subgrupos/${subTesteId}`, { ativo: true })
+    esperar(reat.status === 409 && String(reat.json.erro).includes('grupo pai'), `Reativar subgrupo com grupo inativo: ${reat.status} ${JSON.stringify(reat.json)}`)
+    const novo = await api(gestor, 'POST', '/api/materiais', { ...base, familiaId: famTesteId, grupoId: grpTesteId, subgrupoId: subTesteId })
+    esperar(novo.status === 400 && String(novo.json.erro).includes('grupo selecionado está inativo'), `Grupo inativo em novo material: ${novo.status} ${JSON.stringify(novo.json)}`)
+    esperar((await api(admin, 'PATCH', `/api/grupos/${grpTesteId}`, { ativo: true })).status === 200, 'Reativar grupo')
+    esperar((await api(admin, 'PATCH', `/api/subgrupos/${subTesteId}`, { ativo: true })).status === 200, 'Reativar subgrupo')
+  })
+  await teste('Integridade: subgrupo com materiais não pode ser movido para outro grupo (409); vazio pode', async () => {
+    const r = await api(admin, 'PUT', `/api/subgrupos/${subTesteId}`, { codigo: 'S1', nome: 'Subgrupo Teste Editado', grupoId: grp?.id })
+    esperar(r.status === 409, `Mover subgrupo com material: ${r.status} ${JSON.stringify(r.json)}`)
+    const g2 = await api(admin, 'POST', '/api/grupos', { codigo: 'G2', nome: 'Grupo Teste 2', familiaId: famTesteId })
+    esperar(g2.status === 201, `Criar G2: ${g2.status}`)
+    const g2Id = (g2.json.grupo as { id: string }).id
+    const s2 = await api(admin, 'POST', '/api/subgrupos', { codigo: 'S2', nome: 'Subgrupo Vazio', grupoId: grpTesteId })
+    esperar(s2.status === 201, `Criar S2: ${s2.status}`)
+    const s2Id = (s2.json.subgrupo as { id: string }).id
+    const mv = await api(admin, 'PUT', `/api/subgrupos/${s2Id}`, { codigo: 'S2', nome: 'Subgrupo Vazio', grupoId: g2Id })
+    esperar(mv.status === 200 && (mv.json.subgrupo as { grupoId: string }).grupoId === g2Id, `Mover subgrupo vazio: ${mv.status} ${JSON.stringify(mv.json)}`)
+    const mvInv = await api(admin, 'PUT', `/api/subgrupos/${s2Id}`, { codigo: 'S2', nome: 'Subgrupo Vazio', grupoId: idFake })
+    esperar(mvInv.status === 400 || mvInv.status === 404, `Mover para grupo inexistente: ${mvInv.status}`)
+  })
+  await teste('Integridade: código de grupo/subgrupo é único apenas dentro do pai (409 no mesmo pai, 201 em pai diferente)', async () => {
+    const dup = await api(admin, 'POST', '/api/grupos', { codigo: 'g1', nome: 'Duplicado', familiaId: famTesteId })
+    esperar(dup.status === 409, `Grupo duplicado na mesma família: ${dup.status}`)
+    const outro = await api(admin, 'POST', '/api/grupos', { codigo: 'G1', nome: 'Mesmo código em outra família', familiaId: famOutra?.id })
+    esperar(outro.status === 201 || outro.status === 409, `Grupo em outra família: ${outro.status}`)
+    if (outro.status === 201) {
+      const g = outro.json.grupo as { id: string; codigo: string }
+      esperar(g.codigo === 'G1', 'Código não normalizado')
+      await api(admin, 'PATCH', `/api/grupos/${g.id}`, { ativo: false, confirmar: true })
+    }
+    const dupS = await api(admin, 'POST', '/api/subgrupos', { codigo: 's1', nome: 'Duplicado', grupoId: grpTesteId })
+    esperar(dupS.status === 409, `Subgrupo duplicado no mesmo grupo: ${dupS.status}`)
+  })
+
   const ok = resultados.filter((r) => r.ok).length
   const falhas = resultados.filter((r) => !r.ok)
   console.log(`\n=== Resultado: ${ok}/${resultados.length} testes aprovados ===`)

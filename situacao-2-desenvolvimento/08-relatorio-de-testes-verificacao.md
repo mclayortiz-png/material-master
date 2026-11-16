@@ -77,9 +77,9 @@ Após os ajustes de segurança do seed e dos scripts de teste, toda a verificaç
 Os logs completos estão em `auditoria/logs/` (arquivos 01 a 12).
 
 ## 8.5 Lacunas conhecidas
-- Não há testes unitários isolados (sem servidor) das funções de `lib/`; as regras são cobertas indiretamente pelos testes de integração. Sugestão para próxima fase: adicionar Vitest para `hierarquia.ts`, `validacoes.ts` e `codigo.ts`.
-- Os scripts de teste criam registros residuais (materiais "E2E…", famílias "E##", usuários "auto.*") no banco de preview.
-- Validação com usuários (Situação 3) pendente.
+- Os scripts de teste criam registros residuais (materiais "E2E…", famílias "E##", usuários "auto.*") no banco em que são executados.
+- Validação com usuários (Situação 3) pendente — não realizada nem simulada.
+- Não há teste de bloqueio por tentativas de login, de troca de senha nem da guarda de "último administrador".
 
 
 ## 8.6 Atualização da verificação automática em GitHub Actions (15/11/2026)
@@ -92,3 +92,18 @@ Após a integração das correções de sessão e dos workflows, o GitHub Action
 - Os dez testes E2E descritos na seção 8.3 são **evidências históricas** e não foram reexecutados nesta atualização do CI.
 - Cinco avaliações com colegas e os vídeos acadêmicos continuam pendentes; não atribuir a elas resultado de testes automatizados.
 - Dependabot encontrou 5 alertas em 15/11/2026 (2 moderados e 3 baixos). Foi criada uma branch específica para atualizar os pacotes, com verificação de regressão requerida antes de qualquer merge.
+
+## 8.7 QA incremental em ambiente isolado (15/11/2026)
+
+Após a auditoria, foi executado um ciclo de QA incremental em **ambiente isolado** (cópia do código + schema de banco `qa_incremental`, servidor em porta separada), sem alterar o código de produto, a autenticação, a implantação pública ou o banco de produção. Relatório completo: `auditoria/RELATORIO-QA-INCREMENTAL.md`; matriz atualizada: `auditoria/MATRIZ-COBERTURA-QA.md`.
+
+| Nível | Suíte | Resultado | Evidência |
+|---|---|---|---|
+| Unitário (novo) | Vitest — `tests/unit/` (validacoes 14, hierarquia 7, codigo 8) — `yarn test:unit` | **29/29** | log 14 |
+| Integração (ampliada) | `scripts/testes-integracao.ts` — 29 casos históricos + 18 novos (a suíte publicada em `main` já contém o 30º caso de revogação de sessão, descrito na seção 8.6; a execução isolada abaixo foi feita sobre a base de 29 casos, resultando em 47; após a integração das duas frentes a suíte passa a ter 48 casos, cuja execução conjunta ainda não foi registrada) (autorização em todas as rotas de escrita, auditoria de inativação/usuários/classificações, filtros grupo/subgrupo e busca vazia, integridade de grupos/subgrupos) | **47/47** | logs 15a (1ª execução 46/47, asserção de teste corrigida) e 15 |
+| E2E | `scripts/testes-e2e.py` | **10/10** | log 17 |
+| Estático | `tsc --noEmit`, build de produção da cópia isolada | 0 erros / sucesso | logs 16, 18 |
+
+Total: **88 verificações automatizadas** (29 + 47 + 10 + 2), 88 aprovadas. ESLint restrito aos arquivos de teste (log 19) é verificação complementar, não contada.
+
+Defeitos de produto encontrados: **nenhum**. A única falha intermediária foi uma asserção de teste que não previa o evento `LOGIN` registrado em nome do próprio usuário na trilha de auditoria; a asserção foi corrigida e o produto permaneceu inalterado. Com isso, a lacuna de testes unitários apontada anteriormente nesta seção está encerrada e os quatro níveis do Modelo V possuem evidência de execução.

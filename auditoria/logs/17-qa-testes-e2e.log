@@ -1,0 +1,14 @@
+# E2E Playwright — ambiente isolado :3100 (schema qa_incremental) — 2026-11-15T01:41:37+00:00
+$ TEST_BASE=http://localhost:3100 python3 scripts/testes-e2e.py
+PASS - Login admin -> /inicio 
+PASS - Listar e buscar materiais 
+PASS - Criar material via formulário (validação + cascata + código gerado) 
+PASS - Editar material e ver histórico 
+PASS - Inativar (com motivo) e reativar material 
+PASS - Classificações: criar família pelo diálogo 
+PASS - Admin acessa /usuarios 
+PASS - Consulta (mobile): lista OK, bloqueado em novo/usuarios/classificacoes 
+PASS - Gestor: acessa novo material, bloqueado em classificações, logout 
+PASS - Login com senha errada mostra erro pt-BR 
+E2E: 10/10 aprovados
+exit=0

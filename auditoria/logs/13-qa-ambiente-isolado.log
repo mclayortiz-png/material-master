@@ -1,0 +1,32 @@
+# Ambiente isolado QA — 2026-11-15T01:36:41+00:00
+# Cópia: <copia-isolada>/nextjs_space | schema=qa_incremental (banco de desenvolvimento, nunca public/produção)
+## prisma db push
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "b4001d2e6", schema "qa_incremental" at "db-b4001d2e6.db007.hosteddb.reai.io:5432"
+
+🚀  Your database is now in sync with your Prisma schema. Done in 189ms
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.7.0) to ./../../../material_master/nextjs_space/n
+ode_modules/.prisma/client in 64ms
+
+exit=0
+## prisma db seed
+Environment variables loaded from .env
+Running seed command `tsx --require dotenv/config scripts/safe-seed.ts` ...
+Seed: 23 materiais criados.
+Seed concluído.
+
+🌱  The seed command has been executed.
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.7.0 -> 8.0.0-rc.33                  │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
