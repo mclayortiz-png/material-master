@@ -26,11 +26,14 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
       if (admins <= 1) return NextResponse.json({ erro: 'Deve existir ao menos um Administrador ativo no sistema.' }, { status: 400 })
     }
 
-    const data: { name?: string; perfil?: typeof atual.perfil; ativo?: boolean; password?: string } = {}
+    const data: { name?: string; perfil?: typeof atual.perfil; ativo?: boolean; password?: string; sessionVersion?: { increment: number } } = {}
     if (dados.name) data.name = dados.name
     if (dados.perfil) data.perfil = dados.perfil
     if (typeof dados.ativo === 'boolean') data.ativo = dados.ativo
     if (dados.password) data.password = await bcrypt.hash(dados.password, 10)
+    if (dados.password || dados.ativo === false) {
+      data.sessionVersion = { increment: 1 }
+    }
 
     const usuario = await prisma.$transaction(async (tx) => {
       const u = await tx.user.update({ where: { id }, data, select: USER_SELECT })

@@ -61,6 +61,9 @@ jobs:
       - name: "Verificar tipos TypeScript"
         run: yarn tsc --noEmit
 
+      - name: "Verificar CSP, nonces e origem das mutacoes"
+        run: yarn tsx scripts/test-security-headers.ts
+
       - name: "Compilar Next.js sem ignorar erros"
         run: yarn build
 

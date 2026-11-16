@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { MATERIAL_INCLUDE } from '@/lib/materiais'
@@ -16,6 +16,8 @@ import { ArrowLeft, Pencil, History } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (!session?.user?.id) redirect('/login')
   const { id } = await params
   const m = await prisma.material.findUnique({ where: { id: id ?? '' }, select: { codigo: true } })
   return { title: m?.codigo ?? 'Material' }
@@ -32,6 +34,7 @@ function Campo({ label, valor, mono }: { label: string; valor?: string | null; m
 
 export default async function DetalheMaterialPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
+  if (!session?.user?.id) redirect('/login')
   const podeEditar = podeGerenciarMateriais(session?.user?.perfil)
   const { id } = await params
   const material = await prisma.material.findUnique({ where: { id: id ?? '' }, include: MATERIAL_INCLUDE })

@@ -28,7 +28,9 @@ export function LoginForm() {
     try {
       const res = await signIn('credentials', { email: email.trim(), password, redirect: false })
       if (res?.error) {
-        setErro('E-mail ou senha inválidos, ou usuário inativo.')
+        setErro(res.code === 'too_many_attempts'
+          ? 'Muitas tentativas. Aguarde 15 minutos e tente novamente.'
+          : 'E-mail ou senha inválidos, ou usuário inativo.')
       } else {
         router.replace('/inicio')
       }

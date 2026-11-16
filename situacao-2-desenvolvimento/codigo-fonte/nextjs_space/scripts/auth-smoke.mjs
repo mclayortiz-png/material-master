@@ -28,7 +28,7 @@ await step('csrf token', async () => {
 });
 await step('signup', async () => {
   const r = await fetch(BASE + '/api/signup', {
-    method: 'POST', headers: { 'content-type': 'application/json', cookie: cookies() },
+    method: 'POST', headers: { 'content-type': 'application/json', origin: new URL(BASE).origin, cookie: cookies() },
     body: JSON.stringify({ email, password, name: 'Smoke Test' }),
   });
   if (!r.ok && r.status !== 409) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);

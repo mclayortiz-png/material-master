@@ -63,7 +63,7 @@ async function login(email: string, password: string): Promise<Sessao | null> {
 async function api(sessao: Sessao | null, method: string, path: string, body?: unknown) {
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: { 'content-type': 'application/json', ...(sessao ? { cookie: sessao.cookie } : {}) },
+    headers: { 'content-type': 'application/json', origin: new URL(BASE).origin, ...(sessao ? { cookie: sessao.cookie } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   let json: Record<string, unknown> = {}
@@ -108,7 +108,7 @@ async function main() {
     const s = await login('admin@materialmaster.com.br', 'errada')
     esperar(s === null, 'Login com senha errada foi aceito')
     const r = await api(null, 'POST', '/api/auth/login', { email: 'admin@materialmaster.com.br', password: 'errada' })
-    esperar(r.status === 401, `Esperado 401, obtido ${r.status}`)
+    esperar([400, 404].includes(r.status) && r.json.ok !== true, `Endpoint antigo deve estar removido: ${r.status}`)
   })
 
   // ---------- 3. Autorização (servidor) ----------

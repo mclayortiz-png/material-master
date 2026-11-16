@@ -50,6 +50,7 @@ jobs:
       SEED_SENHA_GESTOR: "ci-gestor-only-2026!"
       SEED_SENHA_CONSULTA: "ci-consulta-only-2026!"
       NEXT_TELEMETRY_DISABLED: "1"
+      SECURITY_TEST_DISPOSABLE: "true"
     steps:
       - name: "Obter codigo"
         uses: actions/checkout@v5
@@ -98,6 +99,9 @@ jobs:
 
       - name: "Executar testes de integracao HTTP e banco"
         run: yarn tsx --require dotenv/config scripts/testes-integracao.ts
+
+      - name: "Verificar autenticacao, revogacao e limites persistentes"
+        run: yarn tsx --require dotenv/config scripts/testes-seguranca.ts
 
       - name: "Mostrar logs do servidor em caso de falha"
         if: failure()

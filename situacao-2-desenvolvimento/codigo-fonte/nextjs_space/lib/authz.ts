@@ -40,7 +40,6 @@ export function respostaErro(err: unknown): NextResponse {
     }
     return NextResponse.json({ erro: 'Dados inválidos. Verifique os campos destacados.', campos }, { status: 400 })
   }
-  const msg = (err as { message?: string })?.message ?? 'Erro interno'
   console.error('[API]', err)
-  return NextResponse.json({ erro: msg }, { status: 500 })
+  return NextResponse.json({ erro: 'Erro interno. Tente novamente mais tarde.' }, { status: 500 })
 }

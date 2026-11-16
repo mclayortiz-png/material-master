@@ -13,8 +13,19 @@ const nextConfig = {
   images: { unoptimized: true },
   // Dev chunk URLs are not content-hashed, so a cached copy outlives an edit.
   async headers() {
-    if (process.env.NODE_ENV !== 'development') return [];
-    return [{ source: '/_next/static/:path*', headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }] }];
+    const headers = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
+    ];
+    if (process.env.NODE_ENV !== 'development') {
+      headers.push({ key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' });
+    }
+    const rules = [{ source: '/:path*', headers }];
+    if (process.env.NODE_ENV === 'development') {
+      rules.push({ source: '/_next/static/:path*', headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }] });
+    }
+    return rules;
   },
   allowedDevOrigins: ['127.0.0.1'],
 };
