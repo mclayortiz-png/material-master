@@ -80,3 +80,15 @@ Os logs completos estão em `auditoria/logs/` (arquivos 01 a 12).
 - Não há testes unitários isolados (sem servidor) das funções de `lib/`; as regras são cobertas indiretamente pelos testes de integração. Sugestão para próxima fase: adicionar Vitest para `hierarquia.ts`, `validacoes.ts` e `codigo.ts`.
 - Os scripts de teste criam registros residuais (materiais "E2E…", famílias "E##", usuários "auto.*") no banco de preview.
 - Validação com usuários (Situação 3) pendente.
+
+
+## 8.6 Atualização da verificação automática em GitHub Actions (15/11/2026)
+
+Após a integração das correções de sessão e dos workflows, o GitHub Actions passou a executar também a suíte com **30 casos de integração**, incluindo o cenário de revogação de sessão de contas rebaixadas/inativadas (item adicional aos 29 casos históricos). Houve **30/30 aprovações** com PostgreSQL descartável, e a compilação TypeScript/Next.js foi aprovada de forma independente.
+
+- Integração: https://github.com/mclayortiz-png/material-master/actions/runs/43771629838
+- Compilação: https://github.com/mclayortiz-png/material-master/actions/runs/43771629849
+- A infraestrutura do GitHub Actions é temporária; não comprova a disponibilidade do site de demonstração.
+- Os dez testes E2E descritos na seção 8.3 são **evidências históricas** e não foram reexecutados nesta atualização do CI.
+- Cinco avaliações com colegas e os vídeos acadêmicos continuam pendentes; não atribuir a elas resultado de testes automatizados.
+- Dependabot encontrou 5 alertas em 15/11/2026 (2 moderados e 3 baixos). Foi criada uma branch específica para atualizar os pacotes, com verificação de regressão requerida antes de qualquer merge.

@@ -5,12 +5,13 @@ Sistema web de Gestão, Padronização e Governança de Cadastros de Materiais.
 
 ## Estado do repositório (15/11/2026)
 
-- **GitHub:** [mclayortiz-png/material-master](https://github.com/mclayortiz-png/material-master), repositório **privado**; branch principal `main`.
+- **GitHub:** [mclayortiz-png/material-master](https://github.com/mclayortiz-png/material-master), repositório **privado** enquanto se concluem as verificações de segurança; branch principal `main`.
 - **Aplicação demonstrada no AbacusAI:** https://material-master.abacusai.app — publicação informada pela plataforma; disponibilidade e versão em produção precisam ser confirmadas separadamente.
 - **Versão publicada na `main`:** MVP com autenticação, perfis, cadastro/consulta/edição/inativação de materiais, hierarquia Família → Grupo → Subgrupo e trilha básica de auditoria.
 - **Banco:** PostgreSQL com Prisma. O repositório contém o esquema de dados, **não** uma cópia do banco em produção.
 - **Testes com evidências na `main`:** logs históricos de **29/29 integrações** e **10/10 fluxos E2E**, executados anteriormente pelo AbacusAI. Esses logs não equivalem a uma execução de CI pelo GitHub.
 - **QA incremental (AbacusAI):** relatório informado de 29 unitários, 47 integrações, 10 E2E e 2 verificações estáticas (88 no total); **ainda requer sincronização/publicação no GitHub e verificação das evidências**. O código mais recente pode diferir do que está na `main`.
+- **CI no GitHub (15/11/2026):** dois workflows ativos, TypeScript + build e integração com PostgreSQL temporário; **30/30 testes de integração aprovados** em execução isolada. Isto não comprova o deploy ou testes humanos.
 - **Testes humanos (Situação 3):** cinco avaliações reais, seus formulários e o vídeo final **pendentes**. Não existem resultados fictícios.
 - **Funcionalidades futuras (RF10–RF13):** dashboard avançado, workflow de solicitações/aprovações, detecção de duplicidades/padronização e exportação CSV. Não afirmar que estão implementadas.
 
@@ -49,18 +50,20 @@ yarn build
 yarn tsx --require dotenv/config scripts/testes-integracao.ts
 ```
 
-O script de integração cria e modifica dados de teste. **Nunca execute contra produção.** As verificações históricas e seus resultados estão em `auditoria/logs/` e `situacao-2-desenvolvimento/08-relatorio-de-testes-verificacao.md`. Alterações propostas em branches ainda não mescladas precisam ser testadas novamente antes do deploy.
+A suíte atual inclui 30 cenários automatizados (29 originais + revogação de sessão). O script de integração cria e modifica dados de teste. **Nunca execute contra produção.** As verificações históricas e seus resultados estão em `auditoria/logs/` e `situacao-2-desenvolvimento/08-relatorio-de-testes-verificacao.md`. Alterações propostas em branches ainda não mescladas precisam ser testadas novamente antes do deploy.
 
 ## Notas de autorização e implantação
 
 - O controle de acesso é realizado nas APIs; componentes visuais sozinhos não concedem permissão.
 - Alterações de perfil e inativação de usuário devem ser revalidadas por sessão. A correção proposta está em branch de revisão e não altera automaticamente a aplicação publicada.
 - O GitHub armazena **código e documentação**; o banco e a aplicação hospedada no AbacusAI são ambientes separados.
-- Não existe pipeline GitHub Actions configurado atualmente; adicionar CI é uma atividade futura.
+- Existem dois workflows GitHub Actions: `.github/workflows/ci-mvp.yml` e `.github/workflows/ci-integracao.yml`.
+- A auditoria de dependências do Dependabot identificou cinco alertas em 15/11/2026; as correções propostas estão em branch de segurança e **dependem de testes e aprovação da PR** antes de integrar à `main`.
 
 ## Próximos passos
 
-1. Revisar e executar os testes das correções de sessão e do build em uma cópia QA isolada.
-2. Sincronizar a auditoria incremental do AbacusAI por branch e pull request, reconciliando diferenças.
-3. Conferir o aplicativo publicado e coletar os cinco testes com pessoas reais.
-4. Consolidar documentação, evidências, vídeo e orientação de acesso ao repositório para a banca.
+1. Validar a Pull Request de correção das dependências vulneráveis e confirmar nova leitura do Dependabot.
+2. Conferir o aplicativo publicado no AbacusAI e validar que utiliza a versão do GitHub, HTTPS e banco próprio.
+3. Tornar o repositório público somente após a conferência de credenciais e segurança.
+4. Recolher cinco avaliações de colegas, registrar resultados reais e produzir os vídeos do formulário PIT II.
+5. Consolidar a documentação de entrega em `auditoria/` com evidências e links verificáveis.
