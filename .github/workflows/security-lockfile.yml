@@ -30,9 +30,9 @@ jobs:
           corepack prepare yarn@4.9.4 --activate
       - name: Sincronizar lockfile e atualizar dependencias transitivas
         run: |
-          yarn install --mode=skip-build
-          yarn up -R fast-xml-parser
-          yarn up -R minimatch
+          CI=false yarn install --mode=skip-build
+          CI=false yarn up -R fast-xml-parser
+          CI=false yarn up -R minimatch
           yarn install --immutable
       - name: Registrar somente lockfile revisado nesta branch
         run: |
