@@ -3,6 +3,10 @@
 Sistema web de Gestão, Padronização e Governança de Cadastros de Materiais.
 **Universidade:** Cruzeiro do Sul Virtual · **Autor:** Marcio C. Silva.
 
+## Revisão de segurança — 16/11/2026
+
+Atualização do Next.js para 16.4.6, remoção do verificador redundante de senhas, limites persistentes de autenticação/cadastro, revogação de sessões após troca de senha e CSP com nonce. Consulte a [análise, evidências e instruções de implantação](auditoria/REVISAO-SEGURANCA-2026-11-16.md). A atualização exige aplicar o SQL aditivo no banco existente antes de iniciar a nova versão; a publicação no AbacusAI é uma etapa separada.
+
 ## Estado do repositório (15/11/2026)
 
 - **GitHub:** [mclayortiz-png/material-master](https://github.com/mclayortiz-png/material-master), repositório **privado** enquanto se concluem as verificações de segurança; branch principal `main`.

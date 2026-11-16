@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { ChunkLoadErrorHandler } from '@/components/chunk-load-error-handler'
 import { SessionProvider } from 'next-auth/react'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-sans' })
 const jakartaSans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-display' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
 
-const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+const baseUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
 
 export const metadata = {
   metadataBase: new URL(baseUrl),
@@ -31,14 +32,15 @@ export const metadata = {
 
 export const viewport = { themeColor: '#0F766E' }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        <script src="https://apps.abacus.ai/chatllm/appllm-lib.js"></script>
+        <script nonce={nonce} src="https://apps.abacus.ai/chatllm/appllm-lib.js"></script>
       </head>
       <body className={`${dmSans.variable} ${jakartaSans.variable} ${jetbrainsMono.variable} font-sans`}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+        <ThemeProvider nonce={nonce} attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <SessionProvider>{children}</SessionProvider>
           <Toaster richColors position="top-right" />
           {/* IMPORTANT: Do not remove — handles chunk loading race conditions in the dev server */}

@@ -49,10 +49,16 @@ export const subgrupoSchema = classificacaoSchema.extend({
   grupoId: z.string({ error: 'Grupo é obrigatório.' }).min(1, 'Grupo é obrigatório.'),
 })
 
+// bcrypt considera apenas os primeiros 72 bytes, incluindo caracteres UTF-8.
+const senhaSchema = z
+  .string({ error: 'Senha é obrigatória.' })
+  .min(6, 'A senha deve ter pelo menos 6 caracteres.')
+  .refine((senha) => senha.length <= 72 && new TextEncoder().encode(senha).length <= 72, 'A senha deve ter no máximo 72 bytes em UTF-8.')
+
 export const usuarioSchema = z.object({
   name: texto(3, 100, 'Nome'),
-  email: z.string({ error: 'E-mail é obrigatório.' }).trim().toLowerCase().email('Informe um e-mail válido.'),
-  password: z.string({ error: 'Senha é obrigatória.' }).min(6, 'A senha deve ter pelo menos 6 caracteres.').max(100, 'Senha muito longa.'),
+  email: z.string({ error: 'E-mail é obrigatório.' }).trim().toLowerCase().max(254, 'E-mail muito longo.').email('Informe um e-mail válido.'),
+  password: senhaSchema,
   perfil: z.enum(['ADMINISTRADOR', 'GESTOR_CADASTRO', 'CONSULTA'], { error: 'Perfil inválido.' }),
 })
 
@@ -60,5 +66,5 @@ export const usuarioEdicaoSchema = z.object({
   name: texto(3, 100, 'Nome').optional(),
   perfil: z.enum(['ADMINISTRADOR', 'GESTOR_CADASTRO', 'CONSULTA'], { error: 'Perfil inválido.' }).optional(),
   ativo: z.boolean().optional(),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.').max(100, 'Senha muito longa.').optional().or(z.literal('')),
+  password: senhaSchema.optional().or(z.literal('')),
 })

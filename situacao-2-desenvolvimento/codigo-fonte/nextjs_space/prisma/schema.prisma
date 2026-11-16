@@ -20,6 +20,7 @@ model User {
   name      String
   email     String   @unique
   password  String
+  sessionVersion Int @default(0)
   perfil    Perfil   @default(CONSULTA)
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -31,6 +32,15 @@ model User {
 
   @@index([perfil])
   @@index([ativo])
+}
+
+// Contadores compartilhados entre processos; não armazenam e-mail/IP em claro.
+model AuthRateLimit {
+  key       String   @id
+  attempts  Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
 }
 
 // ---------- Classificação: Família -> Grupo -> Subgrupo ----------

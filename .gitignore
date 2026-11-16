@@ -10,6 +10,7 @@ out
 build
 .deploy
 *.tsbuildinfo
+**/next-env.d.ts
 
 # ---- Segredos e configuração local (NUNCA versionar) ----
 .env
