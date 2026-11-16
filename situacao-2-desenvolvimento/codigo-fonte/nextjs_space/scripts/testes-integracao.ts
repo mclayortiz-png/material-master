@@ -121,6 +121,39 @@ async function main() {
     esperar(h.get('content-security-policy')?.includes('frame-ancestors') === true, 'CSP anti-clickjacking ausente')
     esperar(h.get('strict-transport-security')?.includes('max-age=') === true, 'HSTS ausente na compilação de produção')
   })
+  await teste('Segurança: bloqueia força bruta por conta e libera após 15 minutos', async () => {
+    const bcrypt = await import('bcryptjs')
+    const { chavesLogin, LIMITES_LOGIN } = await import('../lib/login-rate-limit')
+    const email = `qa-login-${Date.now()}-${process.pid}@example.invalid`
+    const senha = 'SenhaQA-temporaria!2026'
+    const usuario = await prisma.user.create({
+      data: { name: 'Conta temporária de segurança', email, password: await bcrypt.hash(senha, 10), perfil: 'CONSULTA' },
+    })
+    const key = chavesLogin(email, new Request(`${BASE}/api/auth/callback/credentials`))[0].key
+    try {
+      for (let i = 0; i < LIMITES_LOGIN.porConta; i++) {
+        const invalido = await login(email, 'senha-invalida')
+        esperar(invalido === null, `Tentativa inválida número ${i + 1} não foi rejeitada`)
+      }
+      const bloqueado = await login(email, senha)
+      esperar(bloqueado === null, 'Login válido deveria ser bloqueado após exceder o limite de tentativas')
+      const contador = await prisma.loginRateLimit.findUnique({ where: { key } })
+      esperar((contador?.attempts ?? 0) > LIMITES_LOGIN.porConta, 'Contador persistente não registrou o bloqueio')
+      // QA com banco descartável: simula término da janela sem aguardar tempo real.
+      await prisma.loginRateLimit.update({
+        where: { key },
+        data: { windowStart: new Date(Date.now() - 16 * 60 * 1000) },
+      })
+      const recuperado = await login(email, senha)
+      esperar(Boolean(recuperado), 'Login correto não voltou a funcionar após expirar a janela')
+      const depois = await prisma.loginRateLimit.findUnique({ where: { key } })
+      esperar(depois === null, 'Contador da conta deveria ser limpo após login válido')
+    } finally {
+      await prisma.auditLog.deleteMany({ where: { usuarioId: usuario.id } })
+      await prisma.user.delete({ where: { id: usuario.id } })
+      await prisma.loginRateLimit.deleteMany({ where: { key } })
+    }
+  })
   // ---------- 3. Autorização (servidor) ----------
   await teste('Autorização: APIs exigem autenticação (401 sem sessão)', async () => {
     for (const p of ['/api/materiais', '/api/familias', '/api/grupos', '/api/subgrupos', '/api/usuarios', '/api/unidades']) {
