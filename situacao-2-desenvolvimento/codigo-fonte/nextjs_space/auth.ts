@@ -2,6 +2,7 @@ import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
+import { reservarTentativaLogin, limparTentativasLogin } from '@/lib/login-rate-limit'
 import { prisma } from '@/lib/db'
 import type { Perfil } from '@prisma/client'
 
@@ -17,14 +18,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'E-mail', type: 'email' },
         password: { label: 'Senha', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const email = String(credentials?.email ?? '').trim().toLowerCase()
         const password = String(credentials?.password ?? '')
         if (!email || !password) return null
+        // A reserva atomica no PostgreSQL impede tentativa ilimitada em varias instancias.
+        // Em caso de bloqueio, retorna a mesma resposta generica de credenciais invalidas.
+        if (!(await reservarTentativaLogin(email, request))) return null
         const user = await prisma.user.findUnique({ where: { email } })
         if (!user || !user.ativo) return null
         const ok = await bcrypt.compare(password, user.password ?? '')
         if (!ok) return null
+        // Credenciais validas encerram o contador da conta/pareamento, preservando o limite global do IP.
+        await limparTentativasLogin(email, request)
         try {
           await prisma.auditLog.create({
             data: { entidade: 'User', entidadeId: user.id, acao: 'LOGIN', usuarioId: user.id },

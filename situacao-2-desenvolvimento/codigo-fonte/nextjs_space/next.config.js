@@ -11,10 +11,26 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
-  // Dev chunk URLs are not content-hashed, so a cached copy outlives an edit.
+  // Controles de seguranca conservadores; nao incluir includeSubDomains nem preload no dominio da hospedagem.
+  // CSP anti-clickjacking permite o console AbacusAI incorporar o preview em navegadores modernos.
+  // A politica CSP de scripts e estilos sera endurecida apos validacao da interface.
   async headers() {
-    if (process.env.NODE_ENV !== 'development') return [];
-    return [{ source: '/_next/static/:path*', headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }] }];
+    const securityHeaders = [
+      { key: 'Content-Security-Policy', value: "frame-ancestors 'self' https://apps.abacus.ai; object-src 'none'; base-uri 'self'" },
+      { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+    ];
+    if (process.env.NODE_ENV === 'production') {
+      securityHeaders.push({ key: 'Strict-Transport-Security', value: 'max-age=31536000' });
+    }
+    const entries = [{ source: '/:path*', headers: securityHeaders }];
+    // Manter protecao contra cache de chunks apenas no ambiente de desenvolvimento.
+    if (process.env.NODE_ENV === 'development') {
+      entries.push({ source: '/_next/static/:path*', headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }] });
+    }
+    return entries;
   },
   allowedDevOrigins: ['127.0.0.1'],
 };
