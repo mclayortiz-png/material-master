@@ -73,6 +73,9 @@ jobs:
       - name: "Gerar Prisma Client"
         run: yarn prisma generate
 
+      - name: "Provar migracao nao destrutiva LoginRateLimit em schema QA independente"
+        run: yarn tsx scripts/testar-migracao-login-rate-limit.ts
+
       - name: "Criar estrutura no banco de testes descartavel"
         run: yarn prisma db push --skip-generate
 
