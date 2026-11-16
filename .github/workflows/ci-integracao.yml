@@ -74,6 +74,9 @@ jobs:
         run: yarn prisma generate
 
       - name: "Provar migracao nao destrutiva LoginRateLimit em schema QA independente"
+        # A prova utiliza somente o PostgreSQL descartavel deste job; nunca o ambiente do AbacusAI.
+        env:
+          MIGRATION_QA_ONLY: "true"
         run: yarn tsx scripts/testar-migracao-login-rate-limit.ts
 
       - name: "Criar estrutura no banco de testes descartavel"
