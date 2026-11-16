@@ -14,13 +14,22 @@ for (const origin of ['https://*.abacus.ai', 'http://preview.abacus.ai', 'https:
 }
 
 const origin = 'https://material-master.abacusai.app'
-const mutation = (requestOrigin: string | null, contentType: string, method = 'POST') => new Request(`${origin}/api/materiais`, {
+const mutation = (requestOrigin: string | null, contentType: string, method = 'POST', extra: Record<string, string> = {}) => new Request(`${origin}/api/materiais`, {
   method,
-  headers: { ...(requestOrigin ? { origin: requestOrigin } : {}), 'content-type': contentType },
+  headers: { ...(requestOrigin ? { origin: requestOrigin } : {}), 'content-type': contentType, ...extra },
 })
 assert.equal(apiMutationError(mutation(origin, 'application/json; charset=utf-8'), '/api/materiais', origin), null)
 assert.equal(apiMutationError(mutation('https://other-tenant.abacusai.app', 'application/json'), '/api/materiais', origin)?.status, 403)
-assert.equal(apiMutationError(mutation(null, 'application/json'), '/api/materiais', origin)?.status, 403)
+// Origin literal "null" (sandbox/redirect opaco) nunca é aceito.
+assert.equal(apiMutationError(mutation('null', 'application/json'), '/api/materiais', origin)?.status, 403)
+// Navegador que omite Origin mas envia Sec-Fetch-Site ou Referer continua bloqueado.
+assert.equal(apiMutationError(mutation(null, 'application/json', 'POST', { 'sec-fetch-site': 'same-origin' }), '/api/materiais', origin)?.status, 403)
+assert.equal(apiMutationError(mutation(null, 'application/json', 'POST', { referer: `${origin}/materiais` }), '/api/materiais', origin)?.status, 403)
+assert.equal(apiMutationError(mutation(origin, 'application/json', 'POST', { 'sec-fetch-site': 'cross-site' }), '/api/materiais', origin)?.status, 403)
+// Cliente não navegador: ausência simultânea de Origin, Sec-Fetch-Site e Referer passa pela
+// barreira anti-CSRF (não há cookie de navegador em risco); JSON e autorização por rota continuam exigidos.
+assert.equal(apiMutationError(mutation(null, 'application/json'), '/api/materiais', origin), null)
+assert.equal(apiMutationError(mutation(null, 'text/plain'), '/api/materiais', origin)?.status, 415)
 assert.equal(apiMutationError(mutation(origin, 'text/plain'), '/api/materiais', origin)?.status, 415)
 assert.equal(apiMutationError(mutation(origin, '' , 'DELETE'), '/api/materiais/id', origin), null)
 assert.equal(apiMutationError(mutation(null, 'application/x-www-form-urlencoded'), '/api/auth/callback/credentials', origin), null)
