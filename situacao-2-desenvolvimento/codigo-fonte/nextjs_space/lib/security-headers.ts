@@ -32,7 +32,12 @@ export function apiMutationError(request: Request, pathname: string, expectedOri
   if (!pathname.startsWith('/api/') || pathname.startsWith('/api/auth/') ||
       !['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return null
 
-  if (request.headers.get('origin') !== expectedOrigin || request.headers.get('sec-fetch-site') === 'cross-site') {
+  const origin = request.headers.get('origin')
+  const fetchSite = request.headers.get('sec-fetch-site')
+  // Navegadores sempre enviam Origin e Sec-Fetch-Site em mutações; um cliente sem nenhum
+  // desses cabeçalhos (e sem Referer) não é um navegador e não representa risco de CSRF.
+  const clienteNaoNavegador = origin === null && fetchSite === null && request.headers.get('referer') === null
+  if (!clienteNaoNavegador && (origin !== expectedOrigin || fetchSite === 'cross-site')) {
     return { status: 403, erro: 'Origem da solicitação não autorizada.' }
   }
   const contentType = request.headers.get('content-type')?.split(';')[0].trim().toLowerCase()
