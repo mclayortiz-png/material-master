@@ -122,7 +122,7 @@ async function main() {
     esperar(h.get('strict-transport-security')?.includes('max-age=') === true, 'HSTS ausente na compilação de produção')
   })
   await teste('Segurança: bloqueia força bruta por conta e libera após 15 minutos', async () => {
-    const bcrypt = await import('bcryptjs')
+    const bcrypt = (await import('bcryptjs')).default
     const { chavesLogin, LIMITES_LOGIN } = await import('../lib/login-rate-limit')
     const email = `qa-login-${Date.now()}-${process.pid}@example.invalid`
     const senha = 'SenhaQA-temporaria!2026'
